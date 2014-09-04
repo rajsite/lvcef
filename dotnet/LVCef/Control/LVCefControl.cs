@@ -13,15 +13,29 @@
     [ToolboxBitmap(typeof(LVCefControl))]
     public class LVCefControl : Control
     {
+        private const string DBGPREFIX = "[LVCef][LVCefControl]: ";
+
         private bool _controlHandleCreated;
 
         private CefBrowser _browser;
-        private IntPtr _browserWindowHandle;
-        //private LVCefClient _lvCefClient; //keeping references to anything CEF makes it crashy
+        //private IntPtr _browserWindowHandle;
+        
+        private LVCefClient _lvCefClient; //keeping references to anything CEF makes it crashy, release reference after browser made
+
+        [Browsable(false)]
+        public LVCefClient CefClient
+        {
+            get {
+                if(_lvCefClient == null && Browser == null) 
+                    _lvCefClient = new LVCefClient(this); // only make when needed
+                return _lvCefClient; 
+            }
+            internal set { _lvCefClient = value; }
+        }
 
         public LVCefControl()
         {
-            Debug.WriteLine("LVCefControl Constructor");
+            Debug.WriteLine(DBGPREFIX + "Constructor");
             SetStyle(
                 ControlStyles.ContainerControl
                 | ControlStyles.ResizeRedraw
@@ -48,8 +62,6 @@
 
             StartUrl = "about:blank";
 
-            //_lvCefClient = new LVCefClient(this);
-            //_lvCefClient = new LVCefClient();
         }
 
 
@@ -73,7 +85,7 @@
         {
             base.OnHandleCreated(e);
 
-            Debug.WriteLine("LVCefControl OnHandleCreated");
+            Debug.WriteLine(DBGPREFIX + "OnHandleCreated");
             // Assuming OnHandleCreated only ever called once
             //if (DesignMode) // LabVIEW never uses design mode, draw design mode until createBrowser called
             if (!_controlHandleCreated)
@@ -84,12 +96,12 @@
 
         protected override void Dispose(bool disposing)
         {
-            Debug.WriteLine("LVCefControl Start Dispose with browser" + ((_browser == null) ? " " : " not ") + "null");
+            Debug.WriteLine(DBGPREFIX + "Start Dispose with browser" + ((_browser == null) ? " " : " not ") + "null");
             if (_browser != null && disposing) // TODO: ugly hack to avoid crashes when CefWebBrowser are Finalized and underlying objects already finalized
             {
                 if (_browser.IsLoading)
                 {
-                    Debug.WriteLine("Browser still trying to load a page");
+                    Debug.WriteLine(DBGPREFIX + "Browser still trying to load a page");
                     System.Threading.Thread.Sleep(50);
                 }
                 var host = _browser.GetHost();
@@ -100,13 +112,13 @@
                 }
                 _browser.Dispose();
                 _browser = null;
-                _browserWindowHandle = IntPtr.Zero;
+                //_browserWindowHandle = IntPtr.Zero;
                 //_lvCefClient = null;
                 //Paint += PaintInDesignMode;
             }
             
             base.Dispose(disposing);
-            Debug.WriteLine("LVCefControl Finish Dispose");
+            Debug.WriteLine(DBGPREFIX + "Finish Dispose");
         }
         /*
         public event EventHandler BrowserCreated;
@@ -162,8 +174,8 @@
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            Debug.WriteLine("LVCefControl Resize");
-            if (_browserWindowHandle != IntPtr.Zero)
+            Debug.WriteLine(DBGPREFIX + "Resize");
+            if (Handle != IntPtr.Zero)
             {
                 // Ignore size changes when form are minimized.
                 var form = TopLevelControl as Form;
@@ -172,7 +184,7 @@
                     return;
                 }
 
-                ResizeWindow(_browserWindowHandle, Width, Height);
+                ResizeWindow(Handle, Width, Height);
             }
         }
 
@@ -203,13 +215,13 @@
 
 		public void InvalidateSize()
 		{
-            Debug.WriteLine("LVCefControl InvalidateSize");
-			ResizeWindow(_browserWindowHandle, Width, Height);
+            Debug.WriteLine(DBGPREFIX + "InvalidateSize");
+			ResizeWindow(Handle, Width, Height);
 		}
 
         private static void ResizeWindow(IntPtr handle, int width, int height)
         {
-            Debug.WriteLine("LVCefControl ResizeWindow");
+            Debug.WriteLine(DBGPREFIX + "ResizeWindow");
             if (handle != IntPtr.Zero)
             {
                 
@@ -226,8 +238,8 @@
     	public event EventHandler BeforeClose;
         internal protected virtual void OnBeforeClose()
         {
-            Debug.WriteLine("LVCefControl OnBeforeClose");
-            _browserWindowHandle = IntPtr.Zero;
+            Debug.WriteLine(DBGPREFIX + "OnBeforeClose");
+            //_browserWindowHandle = IntPtr.Zero;
             if (BeforeClose != null)
                 BeforeClose(this, EventArgs.Empty);
         }
@@ -251,7 +263,7 @@
          */
         internal CefWindowInfo getCefWindowInfo()
         {
-            Debug.WriteLine("LVCefControl getCefWindowInfo");
+            Debug.WriteLine(DBGPREFIX + "getCefWindowInfo");
             if (_controlHandleCreated)
             {
                 var windowInfo = CefWindowInfo.Create();
@@ -274,13 +286,32 @@
             internal set
             {
                 Trace.Assert( value.GetType() == typeof(CefBrowser));
-                Debug.WriteLine("LVCefControl has initialized the CefBrowser");
+                Debug.WriteLine(DBGPREFIX + "has initialized the CefBrowser");
                 _browser = value; //TODO  why does saving this break everything, apparantly not saving breaks less?
                 //Paint -= PaintInDesignMode;
-                if(_browser != null)
-                    _browserWindowHandle = _browser.GetHost().GetWindowHandle();
-                ResizeWindow(_browserWindowHandle, Width, Height);
+                //if(_browser != null)
+                //    _browserWindowHandle = _browser.GetHost().GetWindowHandle();
+                
+                //Accessed from a thread it was not created on?
+                ResizeWindow(Handle, Width, Height);
+
+                CefClient = null; //holding onto references makes it crashy, release after browser made
             }
+        }
+
+
+        //Race condition? user calls createBrowser twice very quickly
+        //Does CEF check for multiple uses of same handle?
+        public void createBrowser()
+        {
+            if (Browser == null)
+            {
+                Debug.WriteLine(DBGPREFIX + "createBrowser starting creation of CefBrowser");
+                var settings = new CefBrowserSettings { };
+                CefBrowserHost.CreateBrowser(getCefWindowInfo(), CefClient, settings, StartUrl);
+            }
+            else
+                Debug.WriteLine(DBGPREFIX + "createBrowser has already created CefBrowser instance for this control, request ignored.");
         }
     }
 }

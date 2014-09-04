@@ -22,8 +22,7 @@
 
         private readonly LVCefControl _lvCefControl;
 
-        //internal LVCefClient()
-        public LVCefClient(LVCefControl lvCefControl)
+        internal LVCefClient(LVCefControl lvCefControl)
         {
             Debug.WriteLine(DBGPREFIX + "Created");
             if (lvCefControl == null)
@@ -34,23 +33,13 @@
             LifeSpanHandler = new LVCefLifeSpanHandler(_lvCefControl, _messageRouter);
             RequestHandler = new LVCefRequestHandler(_lvCefControl, _messageRouter);
             MessageRouterHandler = new LVCefMessageRouterHandler(_lvCefControl, _messageRouter);
+            RegisterMessageRouter();
         }
 
-        public void createBrowser()
-        {
-            if (_lvCefControl.Browser == null)
-            {
-                Debug.WriteLine(DBGPREFIX + "LVCefControl starting creation of CefBrowser");
-                RegisterMessageRouter();
-                var settings = new CefBrowserSettings { };
-                CefBrowserHost.CreateBrowser(_lvCefControl.getCefWindowInfo(), this, settings, _lvCefControl.StartUrl);
-            }
-            else
-            {
-                Debug.WriteLine(DBGPREFIX + "LVCefControl already has a browser process created");
-            }
-        }
-
+        /*
+         * I think it is possible to RegisterMessageRouter prior to an event being added but after the other handler objects are made
+         * The MessageRouterHandler will do a lookup of registered events every time
+         **/
         private void RegisterMessageRouter()
         {
             Debug.WriteLine(DBGPREFIX + "Message Router, attempting registration");

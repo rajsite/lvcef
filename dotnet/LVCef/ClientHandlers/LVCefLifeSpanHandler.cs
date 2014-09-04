@@ -37,7 +37,11 @@
         protected override void OnAfterCreated(CefBrowser browser)
         {
             Debug.WriteLine(DBGPREFIX + "OnAfterCreated");
-            _lvCefControl.Browser = browser; //Need to be called on ui thread?
+            if (_lvCefControl.InvokeRequired)
+                _lvCefControl.Invoke((Action)delegate { _lvCefControl.Browser = browser; });
+            else
+                _lvCefControl.Browser = browser; //Need to be called on ui thread?
+
 
 	        var handler = OnAfterCreatedEvent;
 	        if (handler != null)

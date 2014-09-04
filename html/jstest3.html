@@ -1,0 +1,51 @@
+<html>
+<head>
+<title>
+</title>
+</head>
+
+<script>
+function loadfunc() {
+	var request_id;
+	printf("The Page is loaded, executing JS");
+	
+	if( window.cefQuery)
+	{
+		var starttime = window.performance.now();
+		var endtime = 0.0;
+		request_id = window.cefQuery({
+			request: 'my_request',
+			//persistent: false,
+            persistent: true,
+			onSuccess: function(response) {
+				endtime = window.performance.now();
+				printf("success message: " + response + " in " + (endtime - starttime) + " ms");
+                starttime = endtime;
+			},
+			onFailure: function(error_code, error_message) {
+				endtime = window.performance.now();
+				printf("error in " + (endtime - starttime) + " ms");
+			}
+		});
+	}
+	else
+	{
+		printf("window.cefQuery is not defined");
+	}
+	
+	printf("JS Finished");
+}
+	
+function printf(text) {
+	var loadedDiv = document.getElementById("loaded");
+	loadedDiv.innerHTML += (text + "<br>");
+}
+
+</script>
+<body onload="loadfunc()">
+Hello: <div id="loaded" style = "max-height: 300px; overflow: scroll;"> </div>
+</body>
+
+
+
+</html>

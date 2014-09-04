@@ -8,25 +8,26 @@
 
     public sealed class LVCefRequestHandler : CefRequestHandler
     {
+        private const string DBGPREFIX = "[LVCef][LVCefRequestHandler]: ";
         private LVCefControl _lvCefControl;
         private CefMessageRouterBrowserSide _messageRouter;
 
         internal LVCefRequestHandler(LVCefControl lvCefControl, CefMessageRouterBrowserSide messageRouter)
         {
-            Debug.WriteLine("Creating the LVCefRequestHandler");
+            Debug.WriteLine(DBGPREFIX + "Constructor");
             _lvCefControl = lvCefControl;
             _messageRouter = messageRouter;
         }
 
         protected override void OnRenderProcessTerminated(CefBrowser browser, CefTerminationStatus status)
         {
-            Debug.WriteLine("Calling OnRenderProcessTerminated");
+            Debug.WriteLine(DBGPREFIX + "OnRenderProcessTerminated");
             _messageRouter.OnRenderProcessTerminated(browser);
         }
 
         protected override bool OnBeforeBrowse(CefBrowser browser, CefFrame frame, CefRequest request, bool isRedirect)
         {
-            Debug.WriteLine("Calling OnBeforeBrowse");
+            Debug.WriteLine(DBGPREFIX + "OnBeforeBrowse");
             _messageRouter.OnBeforeBrowse(browser, frame);
             return false;
         }

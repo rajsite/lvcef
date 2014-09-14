@@ -71,9 +71,6 @@ namespace TestControlAppSimple
                 Application.Idle += (sender, e) => { CefRuntime.DoMessageLoopWork(); };
             }
 
-
-
-
             Application.Run(new TestControlAppSimpleForm());
 
             CefRuntime.Shutdown();

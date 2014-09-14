@@ -50,8 +50,8 @@
                 return;
             }
             // window.cefQuery({ request: 'my_request', onSuccess: function(response) { console.log(response); }, onFailure: function(err,msg) { console.log(err, msg); } });
-            Debug.WriteLine(DBGPREFIX + "Message Router, registered");
             _messageRouter.AddHandler(MessageRouterHandler);
+            Debug.WriteLine(DBGPREFIX + "Message Router, registered");
         }
         private sealed class ActionTask : CefTask
         {

@@ -38,6 +38,15 @@ namespace TestControlAppSimple
                     else
                         button2.Enabled = true;
                 };
+                lvcefclient.RequestHandler.OnGetResourceHandlerEvent += (src, onget) =>
+                {
+                    if(onget.request.Url.Contains("stop"))
+                        onget.DelegateRequest = true;
+                };
+                lvcefclient.RequestHandler.OnProcessRequestEvent += (src, onprocess) =>
+                {
+                    onprocess.continueRequest = false;
+                };
 
                 lvCefControl1.createBrowser();
             }

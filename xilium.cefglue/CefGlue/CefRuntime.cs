@@ -76,11 +76,39 @@
         /// <exception cref="InvalidOperationException"></exception>
         public static void Load()
         {
+            Load(null);
+        }
+
+        /// <summary>
+        /// Loads CEF runtime from specified path.
+        /// </summary>
+        /// <exception cref="DllNotFoundException"></exception>
+        /// <exception cref="CefVersionMismatchException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static void Load(string path)
+        {
             if (_loaded) return;
+
+            if (!string.IsNullOrEmpty(path))
+            {
+                if (Platform == CefRuntimePlatform.Windows)
+                    LoadLibraryWindows(path);
+                else
+                    throw new PlatformNotSupportedException("CEF Runtime can't be initialized on altered path on this platform. Use CefRuntime.Load() instead.");
+            }
 
             CheckVersion();
 
             _loaded = true;
+        }
+
+        private static void LoadLibraryWindows(string path)
+        {
+            Xilium.CefGlue.Platform.Windows.NativeMethods.LoadLibraryEx(
+                System.IO.Path.Combine(path, "libcef.dll"),
+                IntPtr.Zero,
+                Xilium.CefGlue.Platform.Windows.LoadLibraryFlags.LOAD_WITH_ALTERED_SEARCH_PATH
+                );
         }
 
         #region cef_version
@@ -506,6 +534,21 @@
         public static extern int create_url(cef_urlparts_t* parts, cef_string_t* url);
         */
 
+        /////
+        //// Returns the mime type for the specified file extension or an empty string if
+        //// unknown.
+        /////
+        ///*--cef()--*/
+        //CefString CefGetMimeType(const CefString& extension);
+
+        //// Get the extensions associated with the given mime type. This should be passed
+        //// in lower case. There could be multiple extensions for a given mime type, like
+        //// "html,htm" for "text/html", or "txt,text,html,..." for "text/*". Any existing
+        //// elements in the provided vector will not be erased.
+        ///*--cef()--*/
+        //void CefGetExtensionsForMimeType(const CefString& mime_type,
+        //                                 std::vector<CefString>& extensions);
+
         #endregion
 
         #region cef_v8
@@ -775,5 +818,15 @@
         {
             if (!_loaded) Load();
         }
+
+        #region linux
+
+        /////
+        //// Return the singleton X11 display shared with Chromium. The display is not
+        //// thread-safe and must only be accessed on the browser process UI thread.
+        /////
+        //CEF_EXPORT XDisplay* cef_get_xdisplay();
+
+        #endregion
     }
 }

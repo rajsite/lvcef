@@ -32,7 +32,7 @@
 #define CEF_INCLUDE_INTERNAL_CEF_TYPES_H_
 #pragma once
 
-#include "include/internal/cef_build.h"
+#include "include/base/cef_build.h"
 #include "include/internal/cef_string.h"
 #include "include/internal/cef_string_list.h"
 #include "include/internal/cef_time.h"
@@ -150,11 +150,6 @@ typedef enum {
   // ERROR logging.
   ///
   LOGSEVERITY_ERROR,
-
-  ///
-  // ERROR_REPORT logging.
-  ///
-  LOGSEVERITY_ERROR_REPORT,
 
   ///
   // Completely disable logging.
@@ -400,6 +395,14 @@ typedef struct _cef_browser_settings_t {
   ///
   size_t size;
 
+  ///
+  // The maximum rate in frames per second (fps) that CefRenderHandler::OnPaint
+  // will be called for a windowless browser. The actual fps may be lower if
+  // the browser cannot generate frames at the requested rate. The minimum
+  // value is 1 and the maximum value is 60 (default 30).
+  ///
+  int windowless_frame_rate;
+
   // The below values map to WebPreferences settings.
 
   ///
@@ -551,14 +554,6 @@ typedef struct _cef_browser_settings_t {
   // configurable using the "disable-webgl" command-line switch.
   ///
   cef_state_t webgl;
-
-  ///
-  // Controls whether content that depends on accelerated compositing can be
-  // used. Note that accelerated compositing requires hardware support and may
-  // not work on all systems even when enabled. Also configurable using the
-  // "disable-accelerated-compositing" command-line switch.
-  ///
-  cef_state_t accelerated_compositing;
 
   ///
   // Opaque background color used for the browser before a document is loaded
@@ -920,6 +915,16 @@ typedef enum {
   // XMLHttpRequest.
   ///
   RT_XHR,
+
+  ///
+  // A request for a <ping>
+  ///
+  RT_PING,
+
+  ///
+  // Main resource of a service worker.
+  ///
+  RT_SERVICE_WORKER,
 } cef_resource_type_t;
 
 ///
@@ -1049,11 +1054,6 @@ typedef enum {
   UR_FLAG_REPORT_UPLOAD_PROGRESS    = 1 << 3,
 
   ///
-  // If set load timing info will be collected for the request.
-  ///
-  UR_FLAG_REPORT_LOAD_TIMING        = 1 << 4,
-
-  ///
   // If set the headers sent and received for the request will be recorded.
   ///
   UR_FLAG_REPORT_RAW_HEADERS        = 1 << 5,
@@ -1103,6 +1103,14 @@ typedef enum {
 } cef_urlrequest_status_t;
 
 ///
+// Structure representing a point.
+///
+typedef struct _cef_point_t {
+  int x;
+  int y;
+} cef_point_t;
+
+///
 // Structure representing a rectangle.
 ///
 typedef struct _cef_rect_t {
@@ -1111,6 +1119,14 @@ typedef struct _cef_rect_t {
   int width;
   int height;
 } cef_rect_t;
+
+///
+// Structure representing a size.
+///
+typedef struct _cef_size_t {
+  int width;
+  int height;
+} cef_size_t;
 
 ///
 // Existing process IDs.
@@ -1283,6 +1299,15 @@ typedef enum {
   MENU_ID_FIND                = 130,
   MENU_ID_PRINT               = 131,
   MENU_ID_VIEW_SOURCE         = 132,
+
+  // Spell checking word correction suggestions.
+  MENU_ID_SPELLCHECK_SUGGESTION_0        = 200,
+  MENU_ID_SPELLCHECK_SUGGESTION_1        = 201,
+  MENU_ID_SPELLCHECK_SUGGESTION_2        = 202,
+  MENU_ID_SPELLCHECK_SUGGESTION_3        = 203,
+  MENU_ID_SPELLCHECK_SUGGESTION_4        = 204,
+  MENU_ID_SPELLCHECK_SUGGESTION_LAST     = 204,
+  MENU_ID_NO_SPELLING_SUGGESTIONS        = 205,
 
   // All user-defined menu IDs should come between MENU_ID_USER_FIRST and
   // MENU_ID_USER_LAST to avoid overlapping the Chromium and CEF ID ranges
@@ -1461,9 +1486,28 @@ typedef enum {
 // Key event types.
 ///
 typedef enum {
+  ///
+  // Notification that a key transitioned from "up" to "down".
+  ///
   KEYEVENT_RAWKEYDOWN = 0,
+
+  ///
+  // Notification that a key was pressed. This does not necessarily correspond
+  // to a character depending on the key and language. Use KEYEVENT_CHAR for
+  // character input.
+  ///
   KEYEVENT_KEYDOWN,
+
+  ///
+  // Notification that a key was released.
+  ///
   KEYEVENT_KEYUP,
+
+  ///
+  // Notification that a character was typed. Use this for text input. Key
+  // down events may generate 0, 1, or more than one character event depending
+  // on the key, locale, and operating system.
+  ///
   KEYEVENT_CHAR
 } cef_key_event_type_t;
 
@@ -1749,6 +1793,51 @@ typedef struct _cef_geoposition_t {
   ///
   cef_string_t error_message;
 } cef_geoposition_t;
+
+///
+// Print job color mode values.
+///
+typedef enum {
+  COLOR_MODEL_UNKNOWN,
+  COLOR_MODEL_GRAY,
+  COLOR_MODEL_COLOR,
+  COLOR_MODEL_CMYK,
+  COLOR_MODEL_CMY,
+  COLOR_MODEL_KCMY,
+  COLOR_MODEL_CMY_K,  // CMY_K represents CMY+K.
+  COLOR_MODEL_BLACK,
+  COLOR_MODEL_GRAYSCALE,
+  COLOR_MODEL_RGB,
+  COLOR_MODEL_RGB16,
+  COLOR_MODEL_RGBA,
+  COLOR_MODEL_COLORMODE_COLOR,  // Used in samsung printer ppds.
+  COLOR_MODEL_COLORMODE_MONOCHROME,  // Used in samsung printer ppds.
+  COLOR_MODEL_HP_COLOR_COLOR,  // Used in HP color printer ppds.
+  COLOR_MODEL_HP_COLOR_BLACK,  // Used in HP color printer ppds.
+  COLOR_MODEL_PRINTOUTMODE_NORMAL,  // Used in foomatic ppds.
+  COLOR_MODEL_PRINTOUTMODE_NORMAL_GRAY,  // Used in foomatic ppds.
+  COLOR_MODEL_PROCESSCOLORMODEL_CMYK,  // Used in canon printer ppds.
+  COLOR_MODEL_PROCESSCOLORMODEL_GREYSCALE,  // Used in canon printer ppds.
+  COLOR_MODEL_PROCESSCOLORMODEL_RGB,  // Used in canon printer ppds
+} cef_color_model_t;
+
+///
+// Print job duplex mode values.
+///
+typedef enum {
+  DUPLEX_MODE_UNKNOWN = -1,
+  DUPLEX_MODE_SIMPLEX,
+  DUPLEX_MODE_LONG_EDGE,
+  DUPLEX_MODE_SHORT_EDGE,
+} cef_duplex_mode_t;
+
+///
+// Structure representing a print job page range.
+///
+typedef struct _cef_page_range_t {
+  int from;
+  int to;
+} cef_page_range_t;
 
 #ifdef __cplusplus
 }

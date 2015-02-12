@@ -16,8 +16,8 @@ While the goal of the project is high interoperability with the LabVIEW Developm
 
 ### Current Library Versions <a name="current_version"></a>
 
-* CEF 3.1916.1721 Windows 32-bit 
-* Xilium.CefGlue Commit f9edd93 
+* CEF 3.2171.1949 Windows 32-bit 
+* Xilium.CefGlue Commit 335450e 
 
 Getting Started <a name="getting_started"></a>
 ---------

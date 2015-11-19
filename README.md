@@ -1,5 +1,8 @@
 lvcef
 =====
+Current Status
+-------
+This project is not currently maintained, but if you're interested get in touch
 
 Overview <a name="overview"></a>
 --------
